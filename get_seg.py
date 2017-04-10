@@ -28,9 +28,9 @@ def get_one_data(path,lib_path='/home/llyu/data_work/lib/useless.stc'):
     f.close()
 
     f = open(path,'r')
-    label = ['1','2','3','4']
-    alltext = []
+    data = {}
     cur_id = ''
+    cur_label = ''
     text = ''
     for line in f:
         line = line.strip().split('|')
@@ -47,15 +47,16 @@ def get_one_data(path,lib_path='/home/llyu/data_work/lib/useless.stc'):
             if flag == 0 :#and cur_cnt<5:
                 text += line[1]
         # id line
-        elif line[1] in label:
+        elif len(line[0])>10:
             if cur_id != '':
-                alltext.append(text)
+                data[cur_id]=(cur_label,text)
             cur_id = line[0]
+            cur_label = line[1]
             text = ''
     f.close()
     if cur_id!='':
-        alltext.append(text)
-    return alltext
+        data[cur_id]=(cur_label,text)
+    return data
 
 
 '''
@@ -66,17 +67,39 @@ def write_all_data(path,output_path):
         files=[path]
     else:
         files = os.listdir(path)
+    alldata = {}
     f = open(output_path,'w')
     for each in files:
-        alltext = get_one_data(path+'/'+each)
-        for text in alltext:
-            words = segmentor.segment(text)
-            f.write(' '.join(words)+'\n')
+        data = get_one_data(path+'/'+each)
+        for key in data:
+            words = segmentor.segment(data[key][1])
+            label = data[key][0]
+            text = ' '.join(words)
+            f.write(text+'\n')
+            if key not in alldata:
+                alldata[key]=(label,text)
     f.close()
-    return 
+    return alldata
 
 
-
+def divide_corpus(data):
+    test_keys = random.sample(data.keys(),len(data)/5)
+    test = {}
+    train = {}
+    for key in data:
+        label = data[key][0]
+        text = data[key][1]
+        if key in test_keys:
+            test[key]=(label,text)
+        else:
+            train[key]=(label,text)
+    f = open('lib/train.pickle','w')
+    pickle.dump(train,f)
+    f.close()
+    f = open('lib/test.pickle','w')
+    pickle.dump(test,f)
+    f.close()
+    return
 
 
 
@@ -100,3 +123,5 @@ if __name__ == '__main__':
             output_path = a
     if input_path != '' and os.path.exists(input_path):
         data = write_all_data(input_path,output_path)
+        divide_corpus(data)
+
