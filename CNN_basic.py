@@ -17,20 +17,15 @@ segmentor.load(os.path.join(MODELDIR, "cws.model"))
 
 rng = numpy.random.RandomState(23455)
 #convolution parameter
-W_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(150,500)),dtype=theano.config.floatX),borrow=True,name='W_c')
-b_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(500)),dtype=theano.config.floatX),borrow=True,name='b_c')
-W_h = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(500,4)),dtype=theano.config.floatX),borrow=True,name='W_h')
+W_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(100,200)),dtype=theano.config.floatX),borrow=True,name='W_c')
+b_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(200)),dtype=theano.config.floatX),borrow=True,name='b_c')
+W_h = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(200,4)),dtype=theano.config.floatX),borrow=True,name='W_h')
 b_h = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(4)),dtype=theano.config.floatX),borrow=True,name='b_h')
 final_wc = W_c.eval()
 final_bc = b_c.eval()
 final_wh = W_h.eval()
 final_bh = b_h.eval()
 lr=0.005
-
-
-def Conv3Layer(q1,q2,q3):
-    output = T.dot(T.concatenate([q1, q2, q3]), W_c) + b_c
-    return output
 
 
 def ConvLayer(q1,q2):
@@ -56,7 +51,11 @@ def load_embedding(path):
     f.close()
     return word_embedding
 
-
+def load_raw_text(path):
+    f = open(path,'r')
+    data = pickle.load(f)
+    f.close()
+    return data
     
 def load_data(path):
     f = open(path,'r')
@@ -87,7 +86,7 @@ def load_data(path):
             else:
                 temp = rng.uniform(low=-0.1,high=0.1,size=[50])
                 cur_vec.append(temp)
-        while len(cur_vec)<=2:
+        while len(cur_vec)<=1:
             cur_vec.append(rng.uniform(low=-0.1,high=0.1,size=[50]))
         keys.append(key)
         vec.append(numpy.array(cur_vec))
@@ -105,7 +104,7 @@ def CNN_train():
     y = T.vector('y')
     
     #convolution
-    conv_x_output, _ = theano.scan(fn=Conv3Layer, sequences=[x[:-2],x[1:-1],x[2:]])
+    conv_x_output, _ = theano.scan(fn=ConvLayer, sequences=[x[:-1],x[1:]])
     
     #tanh and pooling
     x_hidden = T.tanh(T.max(conv_x_output,axis=0))
@@ -115,7 +114,7 @@ def CNN_train():
     
     #softmax layer
     softmax_output = T.nnet.softmax(x_output)
-    # hinge loss
+    
     cost = -T.log(T.sum(T.dot(y,softmax_output.transpose())))
     
     gparams = []
@@ -132,7 +131,7 @@ def CNN_train():
     #预测模型
     px = T.matrix('px')
     #convolution
-    conv_px_output, _ = theano.scan(fn=Conv3Layer, sequences=[px[:-2],px[1:-1],px[2:]])
+    conv_px_output, _ = theano.scan(fn=ConvLayer, sequences=[px[:-1],px[1:]])
     #tanh and pooling
     px_hidden = T.tanh(T.max(conv_px_output,axis=0))
     #hidden layer
@@ -146,7 +145,7 @@ def CNN_train():
     #开始训练
     print "begin training..."
     iter = 50
-    maxmrr = 0.0
+    maxacc = 0.0
     while(iter):
         cnt=0
         all_cost=0
@@ -173,6 +172,25 @@ def CNN_train():
         print '-------------'
         iter -= 1
         
+        if float(cnt)/len(dev_vec) < maxacc:
+            continue
+        maxacc = float(cnt)/len(dev_vec)
+        f = open('cnn_wrong','w')
+        rf = open('cnn_right','w')
+        for i in range(len(dev_vec)):
+            result = predict(dev_vec[i])
+            if dev_label[i].argmax() != result.argmax():
+                f.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(max(result))+'\n')
+                f.write(raw_text[dev_keys[i]]+'\n')
+            else:
+                rf.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(max(result))+'\n')
+                rf.write(raw_text[dev_keys[i]]+'\n')
+
+        f.close()
+        rf.close()
+    return
+
+
 if __name__ == '__main__':
     print "loading embedding..."
     word_embedding=load_embedding("vectors.bin")
@@ -180,12 +198,10 @@ if __name__ == '__main__':
     train_keys,train_vec,train_label = load_data("lib/train.pickle")
     print "loading dev data..."
     dev_keys,dev_vec,dev_label = load_data("lib/test.pickle")
-    #print "train_data length:",len(train_data)
     word_embedding.clear()
-    #for i in range(10):
-    #    print train_keys[i],train_label[i]
+    
+    raw_text = load_raw_text('lib/raw_text.pickle')
+
     CNN_train()
-    #load_data("nlpcc-iccpol-2016.dbqa.training-data")
-    #CNN_predict()
     
     
