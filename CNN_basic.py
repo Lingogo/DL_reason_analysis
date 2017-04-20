@@ -115,7 +115,10 @@ def CNN_train():
     #softmax layer
     softmax_output = T.nnet.softmax(x_output)
     
-    cost = -T.log(T.sum(T.dot(y,softmax_output.transpose())))
+    cost = -T.log(T.sum(y*softmax_output))
+    #sigmoid layer
+    #sigmoid_output = T.nnet.sigmoid(x_output)
+    #cost = T.sum(-y*T.log(sigmoid_output) - (1-y)*T.log(1-sigmoid_output))
     
     gparams = []
     params = [W_c,b_c,W_h,b_h]
@@ -171,19 +174,30 @@ def CNN_train():
         print 'dev acc:',float(cnt)/len(dev_vec)
         print '-------------'
         iter -= 1
-        
+
         if float(cnt)/len(dev_vec) < maxacc:
             continue
+        # 记录参数，写入文件
+        param = {}
+        param['wc'] = W_c.eval()
+        param['bc'] = b_c.eval()
+        param['wh'] = W_h.eval()
+        param['bh'] = b_h.eval()
+        f = open('lib/parameter.pickle','w')
+        pickle.dump(param,f)
+        f.close()
+        
+        # 将正确及错误用例分别写入文件
         maxacc = float(cnt)/len(dev_vec)
         f = open('cnn_wrong','w')
         rf = open('cnn_right','w')
         for i in range(len(dev_vec)):
             result = predict(dev_vec[i])
             if dev_label[i].argmax() != result.argmax():
-                f.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(max(result))+'\n')
+                f.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(result)+'\n')
                 f.write(raw_text[dev_keys[i]]+'\n')
             else:
-                rf.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(max(result))+'\n')
+                rf.write(dev_keys[i]+'|'+str(result.argmax()+1)+'|'+str(dev_label[i].argmax()+1)+'|'+str(result)+'\n')
                 rf.write(raw_text[dev_keys[i]]+'\n')
 
         f.close()

@@ -113,11 +113,11 @@ def CNN_train():
     #hidden layer
     x_output = T.tanh(T.dot(x_hidden,W_h)+b_h)
     
-    #softmax layer
-    softmax_output = T.nnet.softmax(x_output)
-    # hinge loss
-    cost = T.max([0,0.6-T.sum(T.dot(y,softmax_output.transpose()))])
+    #sigmoid layer
+    sigmoid_output = T.nnet.sigmoid(x_output)
     
+    #cost = T.sum(-y*T.log(sigmoid_output) - (1-y)*T.log(1-sigmoid_output))
+    cost = T.max([0,0.6-T.sum(T.dot(y,softmax_output.transpose()))]) 
     gparams = []
     params = [W_c,b_c,W_h,b_h]
     for param in params:
