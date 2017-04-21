@@ -79,8 +79,12 @@ def trans2utf(text):
         elif codetype == 'GB2312' or codetype=='GBK' or codetype=='GB18030' or codetype=='TIS-620':
             return text.decode('gb18030').encode('utf-8')
         else:
-            print 'type unknown',codetype
-            sys.exit(2)
+            try:
+                text = text.encode('utf-8')
+                return text
+            except:
+                print 'type unknown',codetype
+                sys.exit(2)
     else:
         print 'type unknown',type(text)
         sys.exit(2)

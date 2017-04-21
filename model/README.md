@@ -29,6 +29,7 @@
     label：int标签，1、投诉；2、办理；3、查询；4、其他
 
 用法2：
+    
     from cnn import text_predict
 
     label,result = text_predict(text)

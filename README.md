@@ -15,8 +15,6 @@
 
   get_seg.py              获取语料库分词结果
   
-  CNN_reason_analysis.py  训练与测试代码
-
   CNN_basic.py            CNN效果最好的基本实验
 
   CNN_hinge.py            CNN使用hinge loss的实验
@@ -24,5 +22,3 @@
   onlyuser.seg            分词结果（只有用户）
   
   vectors.bin             词向量
-
-  vectors_skip.bin        词向量（skip-gram方式训练）
