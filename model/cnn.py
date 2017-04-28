@@ -8,7 +8,7 @@ import theano
 import theano.tensor as T
 from pyltp import Segmentor
 
-def load_conf(path='cnn.conf'):
+def load_conf(path='/home/llyu/DL_reason_analysis/model/cnn.conf'):
     seg_path = ''
     para_path = ''
     embed_path = ''
@@ -136,7 +136,7 @@ def text_predict(text):
 
     # rule 1: 词数过少，判定为4
     if len(cur_vec)<2:
-        return 4
+        return 4,[1.0,0.0,0.0,0.0]
 
     # 预测模型
     px = T.matrix('px')

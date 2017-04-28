@@ -95,8 +95,8 @@ def check_rule_4(path):
         for word in text:
             if word in word_embedding:
                 word_cnt += 1
-        #if word_cnt<2:
-        if len(text)<2:
+        if word_cnt<2:
+        #if len(text)<2:
             all_cnt += 1
             if label == 4:
                 right_cnt += 1
@@ -161,6 +161,7 @@ if __name__ == '__main__':
         print cnt#,len(wrong_label),float(cnt)/len(wrong_label)
     '''
 
+    '''
     # 词数过少（1个词），判定为4， 234/284
     print "loading embedding..."
     word_embedding=load_embedding("vectors.bin")
@@ -176,4 +177,51 @@ if __name__ == '__main__':
                 r2w_cnt += 1
         print 'w2r:',len(rkeys),w2r_cnt
         print 'r2w:',len(wkeys),r2w_cnt
+    '''
 
+
+    # 统计类别准确率
+    for threshold in range(41,42):
+        threshold /=100.0
+        rcnt = [0,0,0,0]
+        wcnt = [0,0,0,0]
+        for i in range(len(right_keys)):
+            rcnt[int(right_label[i])-1]+=1
+        for i in range(len(wrong_keys)):
+            wcnt[int(wrong_predict[i])-1]+=1
+        for i in range(4):
+            print i+1,float(rcnt[i])/(rcnt[i]+wcnt[i])
+
+    # 统计阈值准确率
+    for threshold in range(40,75,5):
+        threshold /= 100.0
+        rcnt = 0
+        wcnt = 0
+        for i in range(len(right_keys)):
+            if max(right_score[i])>threshold:
+                rcnt+=1
+        for i in range(len(wrong_keys)):
+            if max(wrong_score[i])>threshold:
+                wcnt+=1
+        if rcnt+wcnt != 0:
+            print threshold,':',rcnt,wcnt,float(rcnt)/(rcnt+wcnt),float(rcnt)/len(right_keys)
+
+    # 阈值0.55 低于阈值选用次高类别
+    for threshold in range(40,60):
+        threshold /= 100.0
+        print threshold
+        rcnt = 0
+        label_2cnt = 0
+        for i in range(len(right_keys)):
+            if max(right_score[i])<=threshold:
+                label_2cnt+=1
+        for i in range(len(wrong_keys)):
+            nd_pos,nd_score = find_nd(wrong_score[i])
+            if max(wrong_score[i])<=threshold:
+                label_2cnt+=1
+            if max(wrong_score[i])<=threshold and nd_pos==int(wrong_label[i]):
+                rcnt+=1
+        print rcnt
+        print 'acc:',float(rcnt+len(right_keys))/(len(right_keys)+len(wrong_keys))
+        print 'proportion of 2 label:',float(label_2cnt)/(len(right_keys)+len(wrong_keys))
+        print '--------------'

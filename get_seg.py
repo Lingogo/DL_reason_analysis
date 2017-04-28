@@ -67,10 +67,12 @@ def write_all_data(path,output_path):
         files=[path]
     else:
         files = os.listdir(path)
+        for i in range(len(files)):
+            files[i] = path+'/'+files[i]
     alldata = {}
     f = open(output_path,'w')
     for each in files:
-        data = get_one_data(path+'/'+each)
+        data = get_one_data(each)
         for key in data:
             words = segmentor.segment(data[key][1])
             label = data[key][0]
@@ -82,12 +84,17 @@ def write_all_data(path,output_path):
     return alldata
 
 
+# 划分训练集和测试集
 def divide_corpus(data):
     test_keys = random.sample(data.keys(),len(data)/5)
     test = {}
     train = {}
     for key in data:
         label = data[key][0]
+        try:
+            a = int(label)
+        except:
+            continue
         text = data[key][1]
         if key in test_keys:
             test[key]=(label,text)

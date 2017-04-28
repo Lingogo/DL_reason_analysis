@@ -16,7 +16,7 @@ segmentor = Segmentor()
 segmentor.load(os.path.join(MODELDIR, "cws.model"))
 
 rng = numpy.random.RandomState(23455)
-#convolution parameter
+# initialize convolution parameter
 W_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(100,200)),dtype=theano.config.floatX),borrow=True,name='W_c')
 b_c = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(200)),dtype=theano.config.floatX),borrow=True,name='b_c')
 W_h = theano.shared(numpy.asarray(rng.uniform(low=-0.1,high=0.1,size=(200,4)),dtype=theano.config.floatX),borrow=True,name='W_h')
@@ -27,7 +27,7 @@ final_wh = W_h.eval()
 final_bh = b_h.eval()
 lr=0.005
 
-
+# convolution function, window: 2
 def ConvLayer(q1,q2):
     output = T.dot(T.concatenate([q1, q2]), W_c) + b_c
     return output
@@ -51,12 +51,14 @@ def load_embedding(path):
     f.close()
     return word_embedding
 
+
 def load_raw_text(path):
     f = open(path,'r')
     data = pickle.load(f)
     f.close()
     return data
-    
+
+# 读取语料，转换为词向量
 def load_data(path):
     f = open(path,'r')
     data = pickle.load(f)
@@ -129,6 +131,8 @@ def CNN_train():
     for param,gparam in zip(params,gparams):
         upd = param - lr*gparam
         updates[param] = upd
+
+    # 编译训练模型函数
     train_model = theano.function(inputs=[x,y],outputs=[cost,softmax_output],updates=updates)
     
     #预测模型
@@ -142,7 +146,7 @@ def CNN_train():
     #output layer 
     px_softmax_output = T.nnet.softmax(px_output)
 
-
+    # 编译预测模型函数
     predict = theano.function(inputs=[px],outputs=px_softmax_output)
     
     #开始训练
@@ -177,7 +181,7 @@ def CNN_train():
 
         if float(cnt)/len(dev_vec) < maxacc:
             continue
-        # 记录参数，写入文件
+        # 记录最优参数，写入文件
         param = {}
         param['wc'] = W_c.eval()
         param['bc'] = b_c.eval()
